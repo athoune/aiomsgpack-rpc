@@ -25,6 +25,7 @@ class MsgpackProtocol(asyncio.Protocol):
         peername = transport.get_extra_info('peername')
         print('Connection from {}'.format(peername))
         self.transport = transport
+        self.transport.write(packb([2, 'peername', peername]))
 
     def data_received(self, data):
         self.packer.feed(data)
