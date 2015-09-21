@@ -11,9 +11,12 @@ b = packb([0, 2, u'add', [1, 0]])
 s.sendall(b)
 
 u = Unpacker()
-while True:
+n = 0
+while n < 2:
     data = s.recv(1024)
     u.feed(data)
     for r in u:
+        if r[0] == 1:  # a response
+            n += 1
         print(r)
 s.close()
