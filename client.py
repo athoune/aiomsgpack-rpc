@@ -2,21 +2,71 @@ import socket
 
 from msgpack import packb, Unpacker
 
-HOST, PORT = 'localhost', 8888
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((HOST, PORT))
-b = packb([0, 1, u'add', [1, 2]])
-s.sendall(b)
-b = packb([0, 2, u'add', [1, 0]])
-s.sendall(b)
 
-u = Unpacker()
-n = 0
-while n < 2:
-    data = s.recv(1024)
-    u.feed(data)
-    for r in u:
-        if r[0] == 1:  # a response
-            n += 1
-        print(r)
-s.close()
+class Server(object):
+
+    def __init__(self, host, port):
+        self._cpt = -1
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.connect((host, port))
+        self.proxy = Proxy(self)
+
+    def call(self, name, args):
+        self._cpt += 1
+        self._socket.sendall(packb([0, self._cpt, name, args]))
+        return self._cpt
+
+    def close(self):
+        self._socket.close()
+
+
+class Method(object):
+
+    def __init__(self, server, name):
+        self._server = server
+        self._name = name
+
+    def __call__(self, *args):
+        return Future(self._server.proxy, self._server.call(self._name, args))
+
+
+class Future(object):
+
+    def __init__(self, proxy, id):
+        self._proxy = proxy
+        self._id = id
+
+class Proxy(object):
+
+    def __init__(self, server):
+        self.__server = server
+
+    def __getattr__(self, name):
+        return Method(self.__server, name)
+
+    def __iter__(self):
+        u = Unpacker()
+        while True:
+            data = self.__server._socket.recv(2048)
+            u.feed(data)
+            for r in u:
+                yield r
+
+
+if __name__ == '__main__':
+    server = Server('localhost', 8888)
+
+    proxy = server.proxy
+
+    proxy.add(1, 2)
+    proxy.add(1, 0)
+
+    n = 0
+    for m in proxy:
+        print(m)
+        if m[0] == 1:
+            n+=1
+        if n == 2:
+            break
+
+    server.close()
