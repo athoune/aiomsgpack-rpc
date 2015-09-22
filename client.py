@@ -19,6 +19,14 @@ class Server(object):
     def close(self):
         self._socket.close()
 
+    def __iter__(self):
+        u = Unpacker()
+        while True:
+            data = self._socket.recv(2048)
+            u.feed(data)
+            for r in u:
+                yield r
+
 
 class Method(object):
 
@@ -36,6 +44,7 @@ class Future(object):
         self._proxy = proxy
         self._id = id
 
+
 class Proxy(object):
 
     def __init__(self, server):
@@ -43,14 +52,6 @@ class Proxy(object):
 
     def __getattr__(self, name):
         return Method(self.__server, name)
-
-    def __iter__(self):
-        u = Unpacker()
-        while True:
-            data = self.__server._socket.recv(2048)
-            u.feed(data)
-            for r in u:
-                yield r
 
 
 if __name__ == '__main__':
@@ -62,7 +63,7 @@ if __name__ == '__main__':
     proxy.add(1, 0)
 
     n = 0
-    for m in proxy:
+    for m in server:
         print(m)
         if m[0] == 1:
             n+=1
