@@ -1,0 +1,2 @@
+class MsgPackRpcError(Exception):
+    pass
