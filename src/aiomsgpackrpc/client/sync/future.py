@@ -92,6 +92,7 @@ class Future(object):
     def __delete__(self):
         del self._server._responses[self._id]
 
+
 class Proxy(object):
 
     def __init__(self, server):
