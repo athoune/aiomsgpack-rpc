@@ -13,4 +13,9 @@ if __name__ == '__main__':
     print("f2", f2)
     for r in as_completed([f1, f2]):
         print(r.result())
-        assert r in {f1, f2}
+        assert r == f1 or r == f2
+    assert len(s._responses) == 2
+    del f1
+    assert len(s._responses) == 1
+    del f2
+    assert len(s._responses) == 0

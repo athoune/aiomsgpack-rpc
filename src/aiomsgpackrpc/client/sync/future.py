@@ -1,4 +1,5 @@
 import socket
+import weakref
 
 from msgpack import packb, Unpacker
 
@@ -52,7 +53,7 @@ class Method(object):
 
     def __call__(self, *args):
         f = Future(self._server, self._server.call(self._name, args))
-        self._server._responses[f._id] = f
+        self._server._responses[f._id] = weakref.proxy(f)
         return f
 
 
@@ -89,7 +90,13 @@ class Future(object):
             self._cb(self)
         self._done = True
 
-    def __delete__(self):
+    def __hash__(self):
+        return hash(self._id)
+
+    def __eq__(self, other):
+        return self._id == other._id
+
+    def __del__(self):
         del self._server._responses[self._id]
 
 
