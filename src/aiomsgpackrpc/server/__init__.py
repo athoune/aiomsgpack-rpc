@@ -8,6 +8,11 @@ class App(dict):
     def make_handler(self):
         return MsgpackProtocol(self)
 
+    def method(self, f, name=None):
+        if name is None:
+            name = f.__name__
+        self[bytes(name, 'utf8')] = f
+
 
 @asyncio.coroutine
 def response(id, transport, coro, args):
@@ -47,14 +52,14 @@ class MsgpackProtocol(asyncio.Protocol):
 
 if __name__ == '__main__':
 
+    app = App()
+
+    @app.method
     @asyncio.coroutine
     def add(a, b):
         print(a, "+", b)
         yield from asyncio.sleep(a+b)
         return a+b
-
-    app = App()
-    app[b'add'] = add
 
     loop = asyncio.get_event_loop()
     coro = loop.create_server(app.make_handler, '127.0.0.1', 8888)
