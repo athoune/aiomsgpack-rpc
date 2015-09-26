@@ -13,6 +13,7 @@ class Server(object):
         self.proxy = Proxy(self)
         self._waiting = 0
         self._responses = dict()
+        self._cb = dict()
 
     def call(self, name, args):
         self._cpt += 1
@@ -23,6 +24,9 @@ class Server(object):
     def close(self):
         self._socket.close()
 
+    def add_notification_cb(self, name, cb):
+        self._cb[name] = cb
+
     def responses(self):
         u = Unpacker()
         while self._waiting > 0:
@@ -30,7 +34,10 @@ class Server(object):
             u.feed(data)
             for r in u:
                 if r[0] == 2:
-                    pass
+                    if r[1] in self._cb:
+                        self._cb[r[1]](*r[2])
+                    else:
+                        print("Unknown notification:", r[1], r[2])
                 else:
                     self._waiting -= 1
                     yield r

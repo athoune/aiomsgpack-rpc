@@ -6,6 +6,9 @@ from aiomsgpackrpc.client.sync.future import Server, as_completed
 
 if __name__ == '__main__':
     s = Server('localhost', 8888)
+    def peername(ip, port):
+        print("Connection from IP: {} Port: {}".format(ip, port))
+    s.add_notification_cb("peername", peername)
     p = s.proxy
     f1 = p.add(1, 2)
     print("f1", f1)
