@@ -24,8 +24,11 @@ class Server(object):
     def close(self):
         self._socket.close()
 
-    def add_notification_cb(self, name, cb):
-        self._cb[name] = cb
+    def notification(self, f, name=None):
+        if name is None:
+            name = f.func_name
+        self._cb[name] = f
+        return f
 
     def responses(self):
         u = Unpacker()
