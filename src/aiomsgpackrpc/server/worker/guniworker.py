@@ -2,6 +2,7 @@ from gunicorn.app.base import Application
 from gunicorn.config import Config
 from gunicorn.workers.sync import SyncWorker
 from gunicorn.arbiter import Arbiter
+import gunicorn.util as util
 
 from msgpack import Unpacker, packb
 
@@ -20,7 +21,8 @@ class Worker(SyncWorker):
 
     def handle(self, listener, client, addr):
         u = Unpacker()
-        while True:
+        again = True
+        while again:
             u.feed(client.recv(4096))
             self.notify()
             for msg in u:
@@ -32,7 +34,8 @@ class Worker(SyncWorker):
                 else:
                     client.sendall(packb([1, msgid, None, r]))
                 finally:
-                    self.notify()
+                    util.close(client)
+                    again = False
 
 
 if __name__ == '__main__':
