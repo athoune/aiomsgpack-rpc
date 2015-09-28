@@ -3,7 +3,7 @@ sys.path.append('src')
 
 import asyncio
 
-from aiomsgpackrpc.server import one_shot_rpc
+from aiomsgpackrpc.server.async_worker import one_shot_rpc
 
 
 loop = asyncio.get_event_loop()
