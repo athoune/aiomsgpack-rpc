@@ -50,6 +50,35 @@ class MsgpackProtocol(asyncio.Protocol):
         return True
 
 
+@asyncio.coroutine
+def one_shot_rpc(msg, host, port, loop):
+    f = asyncio.Future()
+    asyncio.ensure_future(loop.create_connection(
+        lambda: SlaveClientProtocol(msg, f, loop), host, port), loop=loop)
+    return f
+
+
+class SlaveClientProtocol(asyncio.Protocol):
+
+    def __init__(self, msg, future, loop):
+        self.msg = msg
+        self.future = future
+        self._loop = loop
+        self.packer = Unpacker()
+
+    def connection_made(self, transport):
+        transport.write(packb(self.msg))
+
+    def data_received(self, data):
+        self.packer.feed(data)
+        for msg in self.packer:
+            self.future.set_result(msg)
+
+    def connection_lost(self, exc):
+        if not self.future.done():
+            self.future.set_exception(Exception("Connection lost"))
+
+
 if __name__ == '__main__':
 
     app = App()
