@@ -20,6 +20,13 @@ def response(id, transport, coro, args):
     transport.write(packb([1, id, None, r]))
 
 
+def assert_request(msg):
+    assert type(msg) == list
+    assert len(msg) >= 4
+    assert 0 == msg[0]
+    assert type(msg[1]) == int
+
+
 class MsgpackProtocol(asyncio.Protocol):
 
     def __init__(self, routes):
@@ -35,10 +42,7 @@ class MsgpackProtocol(asyncio.Protocol):
     def data_received(self, data):
         self.packer.feed(data)
         for msg in self.packer:
-            assert type(msg) == list
-            assert len(msg) >= 4
-            assert 0 == msg[0]
-            assert type(msg[1]) == int
+            assert_request(msg)
             self.routing(msg)
 
     def routing(self, cmd):
@@ -48,35 +52,6 @@ class MsgpackProtocol(asyncio.Protocol):
 
     def eof_received(self):
         return True
-
-
-@asyncio.coroutine
-def one_shot_rpc(msg, host, port, loop):
-    f = asyncio.Future()
-    asyncio.ensure_future(loop.create_connection(
-        lambda: SlaveClientProtocol(msg, f, loop), host, port), loop=loop)
-    return f
-
-
-class SlaveClientProtocol(asyncio.Protocol):
-
-    def __init__(self, msg, future, loop):
-        self.msg = msg
-        self.future = future
-        self._loop = loop
-        self.packer = Unpacker()
-
-    def connection_made(self, transport):
-        transport.write(packb(self.msg))
-
-    def data_received(self, data):
-        self.packer.feed(data)
-        for msg in self.packer:
-            self.future.set_result(msg)
-
-    def connection_lost(self, exc):
-        if not self.future.done():
-            self.future.set_exception(Exception("Connection lost"))
 
 
 if __name__ == '__main__':
