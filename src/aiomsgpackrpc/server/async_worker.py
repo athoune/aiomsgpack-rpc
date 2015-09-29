@@ -5,14 +5,6 @@ from msgpack import Unpacker, packb
 from aiomsgpackrpc.server import MsgpackProtocol
 
 
-@asyncio.coroutine
-def one_shot_rpc(msg, host, port, loop):
-    f = asyncio.Future()
-    asyncio.ensure_future(loop.create_connection(
-        lambda: SlaveClientProtocol(msg, f, loop), host, port), loop=loop)
-    return f
-
-
 class SlaveClientProtocol(asyncio.Protocol):
 
     def __init__(self, msg, future, loop):
@@ -26,8 +18,8 @@ class SlaveClientProtocol(asyncio.Protocol):
 
     def data_received(self, data):
         self.packer.feed(data)
-        for msg in self.packer:
-            self.future.set_result(msg)
+        msg = next(self.packer)
+        self.future.set_result(msg)
 
     def connection_lost(self, exc):
         if not self.future.done():
@@ -44,6 +36,14 @@ class AppDispatcher(dict):
         return MsgpackDispatcherProtocol(self._slave, self.loop)
 
 
+@asyncio.coroutine
+def one_shot_rpc(msg, host, port, loop):
+    f = asyncio.Future()
+    asyncio.ensure_future(loop.create_connection(
+        lambda: SlaveClientProtocol(msg, f, loop), host, port), loop=loop)
+    return f
+
+
 class MsgpackDispatcherProtocol(MsgpackProtocol):
 
     def __init__(self, slave, loop):
@@ -51,19 +51,12 @@ class MsgpackDispatcherProtocol(MsgpackProtocol):
         self.packer = Unpacker()
         self.loop = loop
 
-    def write_slave(self, msg):
-        f = asyncio.Future()
-        coro = self.loop.create_connection(lambda: SlaveClientProtocol(msg, f,
-                                                                       self.loop),
-                                           *self.slave)
-        return f
-
     def routing(self, msg):
         # FIXME should not unpack and repack
-        r = yield from one_shot_rpc(msg, self._slave[0], self._slave[1],
+        task = asyncio.ensure_future(one_shot_rpc(msg, self._slave[0], self._slave[1],
                                     self.loop)
-        self.transport.write(packb(r))
-
+                                  )
+        task.add_done_callback(lambda f: self.transport.write(packb(f.result())))
 
 
 if __name__ == '__main__':
