@@ -20,7 +20,7 @@ class Worker(SyncWorker):
     _methods = dict()
 
     def handle(self, listener, client, addr):
-        u = Unpacker()
+        u = Unpacker(encoding='utf8')
         again = True
         while again:
             u.feed(client.recv(4096))
@@ -30,7 +30,7 @@ class Worker(SyncWorker):
                 try:
                     r = self.cfg.methods[method](*params)
                 except Exception as e:
-                    client.sendall(packb([1, msgid, e.message, None]))
+                    client.sendall(packb([1, msgid, str(e), None]))
                 else:
                     client.sendall(packb([1, msgid, None, r]))
                 finally:
