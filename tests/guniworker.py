@@ -1,3 +1,9 @@
+"""
+Test your worker
+
+    python -m aiomsgpackrpc.server.worker.guniworker
+
+"""
 import sys
 sys.path.append('src')
 

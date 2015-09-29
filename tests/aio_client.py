@@ -1,3 +1,10 @@
+"""
+Launch the server :
+    python -m aiomsgpackrpc.server
+
+Test it:
+    python tests/aio_client.py
+"""
 import sys
 sys.path.append('src')
 

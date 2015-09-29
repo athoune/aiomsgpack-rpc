@@ -1,3 +1,11 @@
+"""
+Test your worker with an async client.
+
+    python -m aiomsgpackrpc.server.worker.guniworker
+
+the client
+    python tests/aio_guniworker.py
+"""
 import sys
 sys.path.append('src')
 

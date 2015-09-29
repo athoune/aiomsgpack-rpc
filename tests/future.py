@@ -1,3 +1,11 @@
+"""
+Launch the server :
+    python -m aiomsgpackrpc.server
+
+Test it:
+    python tests/future.py
+"""
+
 import sys
 sys.path.append('src')
 
